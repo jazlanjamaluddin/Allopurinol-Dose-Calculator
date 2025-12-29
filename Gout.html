@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Allopurinol Dose Calculator (Treat-to-Target Urate)</title>
+
+  <style>
+    :root{
+      /* Light theme, UM + PKD-inspired palette (+ UM blue) */
+      --bg:#ffffff;
+      --surface:#ffffff;
+      --card:#f8fafc;
+      --border:#d7dde8;
+
+      --um-maroon:#7a0019;
+      --um-gold:#f2b705;
+      --um-blue:#003a8c;   /* Universiti Malaya blue (approx) */
+      --pkd-green:#1f7a4d;
+
+      --text:#111827;
+      --muted:#4b5563;
+
+      --accent:var(--um-maroon);
+      --accent-soft:rgba(122,0,25,.08);
+      --focus:rgba(31,122,77,.18);
+
+      --warn:#b45309;
+      --warn-bg:#fff7ed;
+
+      --danger:#b91c1c;
+      --danger-bg:#fef2f2;
+
+      --info-bg:#f3f7ff;
+      --info-border:rgba(0,58,140,.40); /* blue-tinted info */
+      --ok-bg:#f0fdf6;
+      --ok-border:rgba(31,122,77,.7);
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    header{
+      max-width:1020px;
+      margin:0 auto;
+      padding:26px 16px 10px;
+    }
+
+    h1{
+      margin:0 0 6px;
+      font-size:24px;
+      color:var(--um-maroon);
+      letter-spacing:.2px;
+    }
+
+    .sub{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.4;
+      max-width:78ch;
+    }
+
+    .divider{
+      height:4px;
+      background:linear-gradient(90deg, var(--um-maroon), var(--um-blue), var(--um-gold), var(--pkd-green));
+      border-radius:999px;
+      margin-top:14px;
+    }
+
+    .wrap{
+      max-width:1020px;
+      margin:0 auto;
+      padding:14px 16px 22px;
+    }
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin:14px 0 12px;
+    }
+
+    .tabbtn{
+      border:1px solid var(--border);
+      background:var(--surface);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:900;
+      font-size:13px;
+    }
+
+    .tabbtn[aria-selected="true"]{
+      border-color:rgba(0,58,140,.75);
+      background:rgba(0,58,140,.06);
+      color:var(--um-blue);
+      box-shadow:0 0 0 3px rgba(0,58,140,.08);
+    }
+
+    .panel{
+      display:none;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:16px;
+    }
+
+    .panel.active{display:block}
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+
+    @media (max-width:820px){
+      .grid{grid-template-columns:1fr}
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .row > div{flex:1; min-width:190px}
+
+    label{
+      display:block;
+      font-size:12px;
+      font-weight:900;
+      color:#374151;
+      margin:0 0 6px;
+    }
+
+    input, select{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:#ffffff;
+      color:var(--text);
+      outline:none;
+      font-size:14px;
+    }
+
+    input:focus, select:focus{
+      border-color:var(--um-blue);
+      box-shadow:0 0 0 3px rgba(0,58,140,.14);
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid rgba(0,58,140,.85);
+      background:var(--um-blue);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:950;
+      margin-top:10px;
+      width:100%;
+    }
+
+    .btn:hover{filter:brightness(.96)}
+
+    .muted{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .note{
+      border-left:5px solid var(--info-border);
+      padding:10px 12px;
+      background:var(--info-bg);
+      border-radius:12px;
+      margin:10px 0 0;
+      font-size:13px;
+    }
+
+    .note.ok{
+      border-left-color:var(--ok-border);
+      background:var(--ok-bg);
+    }
+
+    .note.warn{
+      border-left-color:rgba(180,83,9,.8);
+      background:var(--warn-bg);
+    }
+
+    .note.danger{
+      border-left-color:rgba(185,28,28,.85);
+      background:var(--danger-bg);
+    }
+
+    .kpi{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding:14px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:#fff;
+    }
+
+    .kpi h3{
+      margin:0;
+      font-size:14px;
+      color:var(--pkd-green);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .kpi .big{
+      font-size:22px;
+      font-weight:950;
+      margin:0;
+      color:#111827;
+    }
+
+    .kpi .small{
+      margin:0;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.4;
+    }
+
+    .pill{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid var(--border);
+      color:#374151;
+      background:#fff;
+      font-weight:900;
+    }
+
+    .reco{
+      border:1px dashed rgba(0,58,140,.45);
+      background:rgba(0,58,140,.04);
+      border-radius:12px;
+      padding:10px 12px;
+    }
+
+    .reco h4{
+      margin:0 0 6px;
+      font-size:13px;
+      color:var(--um-blue);
+    }
+
+    .reco p{
+      margin:0;
+      font-size:13px;
+      color:#374151;
+      line-height:1.45;
+    }
+
+    a{color:var(--um-blue)}
+    code{
+      background:#fff;
+      padding:2px 6px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      font-size:12px;
+    }
+
+    details summary{
+      cursor:pointer;
+      font-weight:950;
+      color:#374151;
+    }
+
+    footer{
+      max-width:1020px;
+      margin:0 auto;
+      padding:0 16px 26px;
+      color:var(--muted);
+      font-size:12px;
+      text-align:center;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Allopurinol Dose Calculator</h1>
+    <p class="sub">
+      Treat-to-target serum urate using a published dose–response model and rearranged dose-prediction equation.
+      Outputs predicted maintenance dose for targets <b>360 µmol/L</b> and <b>300 µmol/L</b>.
+    </p>
+    <div class="divider"></div>
+  </header>
+
+  <div class="wrap">
+    <div class="tabs" role="tablist" aria-label="Calculator tabs">
+      <button class="tabbtn" role="tab" id="tab-about" aria-controls="panel-about" aria-selected="true">About</button>
+      <button class="tabbtn" role="tab" id="tab-calc" aria-controls="panel-calc" aria-selected="false">Calculator</button>
+      <button class="tabbtn" role="tab" id="tab-sources" aria-controls="panel-sources" aria-selected="false">Sources</button>
+    </div>
+
+    <!-- ABOUT -->
+    <section class="panel active" id="panel-about" role="tabpanel" aria-labelledby="tab-about">
+      <div class="card">
+        <h2 style="margin:0 0 8px;font-size:16px;color:#111827;">What this calculator does</h2>
+        <p class="muted" style="margin:0">
+          It estimates the <b>maintenance</b> allopurinol dose (mg/day) expected to reach urate targets using:
+          <code>D = ID50 × (UP − UT) / (UT − UR)</code>.
+        </p>
+
+        <div class="note warn">
+          <b>For healthcare workers only.</b> Educational use. Not medical advice. Use clinical judgement, guideline precautions,
+          and local protocols. Start low and titrate, especially in higher-risk patients.
+        </div>
+
+        <div class="note ok">
+          <b>Input options</b>
+          <ul style="margin:8px 0 0 18px;color:#374151;">
+            <li><b>Pretreatment urate available</b> (preferred): enter baseline urate (UP).</li>
+            <li><b>Pretreatment urate not available</b>: estimate UP from current urate (UT) and current dose (D).
+              This assumes adherence, steady state, and stable therapy.</li>
+          </ul>
+        </div>
+
+        <div class="note">
+          <b>Important limitations</b>
+          <ul style="margin:8px 0 0 18px;color:#374151;">
+            <li>Estimates are model-based and may differ for an individual patient.</li>
+            <li>If the patient recently changed dose, is non-adherent, or is not at steady state, results can be misleading.</li>
+            <li>If a target is at or below UR (the model “floor”), the dose is not computable in this framework.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- CALCULATOR -->
+    <section class="panel" id="panel-calc" role="tabpanel" aria-labelledby="tab-calc">
+      <div class="grid">
+        <div class="card">
+          <h2 style="margin:0 0 10px;font-size:16px;color:#111827;">Inputs</h2>
+
+          <div class="row">
+            <div>
+              <label for="unitMode">Urate units</label>
+              <select id="unitMode">
+                <option value="umol" selected>µmol/L</option>
+                <option value="mgdl">mg/dL</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="inputMode">Urate input mode</label>
+              <select id="inputMode">
+                <option value="baseline" selected>Pretreatment urate available</option>
+                <option value="ontx">Pretreatment not available (estimate from on-treatment)</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="baselineBox" style="margin-top:12px;">
+            <label for="UP">Pretreatment urate (UP)</label>
+            <input id="UP" type="number" inputmode="decimal" placeholder="e.g., 560" />
+            <p class="muted" style="margin:8px 0 0;">Enter baseline urate before urate-lowering therapy if known.</p>
+          </div>
+
+          <div id="ontxBox" style="display:none;margin-top:12px;">
+            <div class="row">
+              <div>
+                <label for="UTnow">Current urate on allopurinol (UT)</label>
+                <input id="UTnow" type="number" inputmode="decimal" placeholder="e.g., 450" />
+              </div>
+              <div>
+                <label for="Dnow">Current allopurinol dose (mg/day)</label>
+                <input id="Dnow" type="number" inputmode="decimal" placeholder="e.g., 100" />
+              </div>
+            </div>
+
+            <div class="note warn">
+              <b>Baseline estimation disclaimer</b>
+              <div class="muted" style="margin-top:6px;">
+                Estimating pretreatment urate assumes adherence, steady state, and stable dose.
+                Recent dose changes, missed doses, interacting medicines, intercurrent illness, or atypical kinetics can distort the estimate.
+              </div>
+            </div>
+          </div>
+
+          <details style="margin-top:12px;">
+            <summary>Advanced parameters (optional)</summary>
+            <div class="row" style="margin-top:10px;">
+              <div>
+                <label for="ID50">ID50 (mg/day)</label>
+                <input id="ID50" type="number" inputmode="decimal" value="226" />
+                <p class="muted" style="margin:6px 0 0;">Population estimate used in the original model.</p>
+              </div>
+              <div>
+                <label for="UR">UR (urate “floor”)</label>
+                <input id="UR" type="number" inputmode="decimal" value="200" />
+                <p class="muted" style="margin:6px 0 0;">Set in selected units (default 200 µmol/L ≈ 0.20 mmol/L).</p>
+              </div>
+            </div>
+          </details>
+
+          <button class="btn" id="btnCalc">Calculate</button>
+          <div id="messages" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="card">
+          <h2 style="margin:0 0 10px;font-size:16px;color:#111827;">Results</h2>
+
+          <div class="kpi" style="margin-bottom:10px;">
+            <h3>
+              Estimated pretreatment urate (UP)
+              <span class="pill" id="upTag">from input</span>
+            </h3>
+            <p class="big" id="upOut">—</p>
+            <p class="small" id="upExplain">—</p>
+          </div>
+
+          <div class="kpi" style="margin-bottom:10px;">
+            <h3>Predicted dose to target 360 µmol/L (6 mg/dL)</h3>
+            <p class="big" id="dose360">—</p>
+            <p class="small" id="dose360Note">—</p>
+            <div class="reco" style="margin-top:8px;">
+              <h4>Practical dosing recommendation</h4>
+              <p id="dose360Reco">—</p>
+            </div>
+          </div>
+
+          <div class="kpi">
+            <h3>Predicted dose to target 300 µmol/L (5 mg/dL)</h3>
+            <p class="big" id="dose300">—</p>
+            <p class="small" id="dose300Note">—</p>
+            <div class="reco" style="margin-top:8px;">
+              <h4>Practical dosing recommendation</h4>
+              <p id="dose300Reco">—</p>
+            </div>
+          </div>
+
+          <div class="note" style="margin-top:12px;">
+            <b>Interpretation tips</b>
+            <ul style="margin:8px 0 0 18px;color:#374151;">
+              <li>These are <b>maintenance-dose</b> estimates, not starting doses.</li>
+              <li>Titrate gradually and recheck urate after dose changes.</li>
+              <li>If predicted doses are very high, reassess adherence and contributing factors; consider specialist input.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOURCES -->
+    <section class="panel" id="panel-sources" role="tabpanel" aria-labelledby="tab-sources">
+      <div class="card">
+        <h2 style="margin:0 0 10px;font-size:16px;color:#111827;">Sources</h2>
+
+        <p class="muted" style="margin:0 0 10px;">
+          The calculator equations are based on the published dose–response model (ID50/UR framework) and its rearranged dose-prediction form.
+        </p>
+
+        <ul style="margin:8px 0 0 18px;color:#374151;">
+          <li>
+            Graham GG, Kannangara DRW, et al. <i>Understanding the dose–response relationship of allopurinol: predicting the optimal dosage</i>.
+            British Journal of Clinical Pharmacology (2013).<br>
+            Journal (Wiley): <a href="https://bpspubs.onlinelibrary.wiley.com/doi/full/10.1111/bcp.12126" target="_blank" rel="noreferrer">Article page</a>
+            · PubMed: <a href="https://pubmed.ncbi.nlm.nih.gov/23590252/" target="_blank" rel="noreferrer">PMID 23590252</a>
+            · PMC: <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3845316/" target="_blank" rel="noreferrer">Full text</a>
+          </li>
+          <li style="margin-top:10px;">
+            Example of a later evidence synthesis (2025) on urate-lowering therapy dose–response:
+            <a href="https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2025.1565530/full" target="_blank" rel="noreferrer">Frontiers in Pharmacology</a>
+            · PubMed: <a href="https://pubmed.ncbi.nlm.nih.gov/40635751/" target="_blank" rel="noreferrer">PMID 40635751</a>
+            · PMC: <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12237641/" target="_blank" rel="noreferrer">Full text</a>
+          </li>
+        </ul>
+
+        <div class="note warn">
+          <b>Note</b>
+          <div class="muted" style="margin-top:6px;">
+            The 2025 synthesis is provided as background context. The calculator’s equations and default parameters are derived from the 2013 BJCP model.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    Created by Department of Primary Care Medicine, Universiti Malaya and FMS PKD Gombak.
+  </footer>
+
+<script>
+  // ---------- Tabs ----------
+  const tabs = [
+    {btn: document.getElementById("tab-about"), panel: document.getElementById("panel-about")},
+    {btn: document.getElementById("tab-calc"), panel: document.getElementById("panel-calc")},
+    {btn: document.getElementById("tab-sources"), panel: document.getElementById("panel-sources")},
+  ];
+  function activateTab(id){
+    tabs.forEach(t=>{
+      const on = (t.btn.id === id);
+      t.btn.setAttribute("aria-selected", on ? "true" : "false");
+      t.panel.classList.toggle("active", on);
+    });
+  }
+  tabs.forEach(t=>t.btn.addEventListener("click", ()=>activateTab(t.btn.id)));
+
+  // ---------- Helpers ----------
+  const unitMode = document.getElementById("unitMode");
+  const inputMode = document.getElementById("inputMode");
+  const baselineBox = document.getElementById("baselineBox");
+  const ontxBox = document.getElementById("ontxBox");
+
+  // Urate conversion: 1 mg/dL = 59.48 µmol/L (urate)
+  function mgdlToUmol(x){ return x * 59.48; }
+  function umolToMgdl(x){ return x / 59.48; }
+
+  function fmt(x, decimals=2){
+    if (!isFinite(x)) return "—";
+    return x.toLocaleString(undefined, {maximumFractionDigits: decimals});
+  }
+
+  function showMsg(kind, html){
+    const box = document.getElementById("messages");
+    const cls = kind === "danger" ? "note danger" : kind === "warn" ? "note warn" : "note ok";
+    box.innerHTML = `<div class="${cls}">${html}</div>`;
+  }
+  function clearMsg(){ document.getElementById("messages").innerHTML = ""; }
+
+  // Round dose to available strengths: 50, 100, 300 mg tablets
+  // Strategy: search combinations of 50/100/300 that approximate the predicted dose.
+  function roundToAvailableDose(targetDose, maxDose=900){
+    if (!isFinite(targetDose)) return {dose: NaN, combo: ""};
+    const capped = Math.min(Math.max(0, targetDose), maxDose);
+    let best = {dose: 0, diff: Infinity, combo: ""};
+
+    for (let n300=0; n300<=Math.floor(maxDose/300); n300++){
+      for (let n100=0; n100<=Math.floor((maxDose-300*n300)/100); n100++){
+        for (let n50=0; n50<=Math.floor((maxDose-300*n300-100*n100)/50); n50++){
+          const d = 300*n300 + 100*n100 + 50*n50;
+          const diff = Math.abs(d - capped);
+          if (diff < best.diff || (diff === best.diff && d < best.dose)){
+            const parts = [];
+            if (n300) parts.push(`${n300}×300`);
+            if (n100) parts.push(`${n100}×100`);
+            if (n50) parts.push(`${n50}×50`);
+            best = {dose:d, diff, combo: parts.length ? parts.join(" + ") + " mg" : "0 mg"};
+          }
+        }
+      }
+    }
+    return best;
+  }
+
+  function splitFrequencyText(totalDose){
+    if (!isFinite(totalDose)) return "";
+    if (totalDose <= 300) return "Frequency: once daily (single dose).";
+    return "Frequency: once daily or in 2 or 3 divided doses (recommended if >300 mg/day).";
+  }
+
+  // ---------- Mode switching ----------
+  inputMode.addEventListener("change", ()=>{
+    const mode = inputMode.value;
+    baselineBox.style.display = mode === "baseline" ? "block" : "none";
+    ontxBox.style.display = mode === "ontx" ? "block" : "none";
+    clearMsg();
+  });
+
+  // ---------- Calculation ----------
+  document.getElementById("btnCalc").addEventListener("click", ()=>{
+    clearMsg();
+
+    const units = unitMode.value; // "umol" or "mgdl"
+    const mode = inputMode.value;
+
+    const ID50 = Number(document.getElementById("ID50").value);
+    const UR_input = Number(document.getElementById("UR").value);
+
+    if (!(ID50 > 0)) {
+      showMsg("danger", "<b>Fix input:</b> ID50 must be greater than 0.");
+      return;
+    }
+    if (!(UR_input > 0)) {
+      showMsg("danger", "<b>Fix input:</b> UR must be greater than 0.");
+      return;
+    }
+
+    const UR_umol = (units === "mgdl") ? mgdlToUmol(UR_input) : UR_input;
+
+    // Determine UP (pretreatment urate)
+    let UP_umol = NaN;
+    let upFrom = "from input";
+    let upExplain = "";
+
+    if (mode === "baseline") {
+      const UP_in = Number(document.getElementById("UP").value);
+      if (!(UP_in > 0)) {
+        showMsg("danger", "<b>Fix input:</b> Enter a pretreatment urate value.");
+        return;
+      }
+      UP_umol = (units === "mgdl") ? mgdlToUmol(UP_in) : UP_in;
+      upExplain = "Used the pretreatment urate you entered.";
+    } else {
+      const UT_in = Number(document.getElementById("UTnow").value);
+      const Dnow = Number(document.getElementById("Dnow").value);
+
+      if (!(UT_in > 0) || !(Dnow > 0)) {
+        showMsg("danger", "<b>Fix input:</b> Enter current urate and current allopurinol dose.");
+        return;
+      }
+
+      const UT_umol = (units === "mgdl") ? mgdlToUmol(UT_in) : UT_in;
+
+      // UP = UR + (UT - UR) * (ID50 + D) / ID50
+      UP_umol = UR_umol + (UT_umol - UR_umol) * (ID50 + Dnow) / ID50;
+      upFrom = "estimated";
+      upExplain = "Estimated from current urate and dose (assumes adherence and steady state).";
+
+      if (UT_umol < UR_umol) {
+        showMsg("warn",
+          "<b>Check inputs:</b> Current urate is below the UR floor you set. " +
+          "Baseline estimation may be unreliable. Consider adjusting UR or verifying the lab value/timing."
+        );
+      }
+    }
+
+    if (!(UP_umol > 0) || !isFinite(UP_umol)) {
+      showMsg("danger", "<b>Calculation failed:</b> Pretreatment urate could not be determined.");
+      return;
+    }
+
+    // Dose prediction:
+    // D = ID50 * (UP - UT_target) / (UT_target - UR)
+    function predictedDose(UT_target_umol){
+      const denom = (UT_target_umol - UR_umol);
+      if (denom <= 0) return NaN;
+      const numer = (UP_umol - UT_target_umol);
+      const D = ID50 * (numer / denom);
+      return Math.max(0, D);
+    }
+
+    const target360_umol = 360;
+    const target300_umol = 300;
+
+    const D360 = predictedDose(target360_umol);
+    const D300 = predictedDose(target300_umol);
+
+    // Output elements
+    const upOut = document.getElementById("upOut");
+    const upTag = document.getElementById("upTag");
+    const upExplainEl = document.getElementById("upExplain");
+
+    const dose360El = document.getElementById("dose360");
+    const dose300El = document.getElementById("dose300");
+    const dose360Note = document.getElementById("dose360Note");
+    const dose300Note = document.getElementById("dose300Note");
+
+    const dose360Reco = document.getElementById("dose360Reco");
+    const dose300Reco = document.getElementById("dose300Reco");
+
+    upTag.textContent = upFrom;
+
+    if (units === "mgdl") {
+      const UP_mgdl = umolToMgdl(UP_umol);
+      upOut.textContent = `${fmt(UP_mgdl, 2)} mg/dL`;
+      upExplainEl.textContent = `${upExplain} (≈ ${Math.round(UP_umol)} µmol/L)`;
+    } else {
+      upOut.textContent = `${Math.round(UP_umol)} µmol/L`;
+      upExplainEl.textContent = `${upExplain} (≈ ${fmt(umolToMgdl(UP_umol), 2)} mg/dL)`;
+    }
+
+    function doseLine(D){
+      if (!isFinite(D)) return "Not computable";
+      const capped = Math.min(D, 900);
+      const capNote = (D > 900) ? " (capped at 900)" : "";
+      return `${Math.round(capped)} mg/day${capNote}`;
+    }
+
+    dose360El.textContent = doseLine(D360);
+    dose300El.textContent = doseLine(D300);
+
+    function doseGuidance(D, target_umol){
+      if (!isFinite(D)) {
+        const UR_str = (units === "mgdl") ? `${fmt(umolToMgdl(UR_umol), 2)} mg/dL` : `${Math.round(UR_umol)} µmol/L`;
+        return `Target is at or below UR (${UR_str}). This model cannot compute a dose for that target.`;
+      }
+
+      const Dcap = Math.min(D, 900);
+      const notes = [];
+      if (D > 900) notes.push("Predicted dose exceeds 900 mg/day; output is capped at 900 mg/day.");
+      if (Dcap > 600) notes.push("High estimate. Titrate cautiously and monitor closely.");
+      else if (Dcap > 400) notes.push("Moderate-high estimate. Consider gradual escalation and follow-up labs.");
+      else notes.push("Estimate in a common clinical range. Still titrate and monitor.");
+
+      notes.push("Round to available tablet strengths and local protocols.");
+      return notes.join(" ");
+    }
+
+    dose360Note.textContent = doseGuidance(D360, target360_umol);
+    dose300Note.textContent = doseGuidance(D300, target300_umol);
+
+    // Recommendations: round to 50/100/300 strengths, cap 900, frequency rule
+    function recoText(D){
+      if (!isFinite(D)) return "—";
+      const Dcap = Math.min(D, 900);
+      const rounded = roundToAvailableDose(Dcap, 900);
+      const freq = splitFrequencyText(rounded.dose);
+      const capStr = (D > 900) ? " Maximum applied: 900 mg/day." : " Maximum: 900 mg/day.";
+      const combo = rounded.combo ? ` (e.g., ${rounded.combo})` : "";
+      return `Recommended practical dose: ${rounded.dose} mg/day${combo}. ${freq}${capStr}`;
+    }
+
+    dose360Reco.textContent = recoText(D360);
+    dose300Reco.textContent = recoText(D300);
+  });
+</script>
+</body>
+</html>
